@@ -37,7 +37,7 @@ val charWriter = Writer<Char>({ value(it.toString()) }, { writeString(it.toStrin
 val byteWriter = Writer<Byte>({ value(it) }, { writeVarInt(it.toInt()) }, FieldType.VarInt)
 val shortWriter = Writer<Short>({ value(it) }, { writeVarInt(it.toInt()) }, FieldType.VarInt)
 val unitWriter = Writer<Unit>({ startObject().endObject() }, {}, FieldType.Object)
-val binaryWriter = Writer<ByteBuf>({ value(it.string) }, { writeVarInt(it.readableBytes()); writeBytes(it) }, FieldType.LengthEncoded)
+val binaryWriter = Writer<ByteBuf>({ value(it) }, { writeVarInt(it.readableBytes()); writeBytes(it) }, FieldType.LengthEncoded)
 
 fun <T> arrayWriter(writer: Writer<T>?) = if(writer === null) {
     Writer<List<T>>({
@@ -205,11 +205,8 @@ val dateReader = Reader(Date::class.java, {
 })
 
 val binaryReader = Reader(ByteBuf::class.java, {
-    val byte = it.useByteString
-    it.useByteString = true
     it.expect(JsonToken.Type.StringLit)
-    it.useByteString = byte
-    Unpooled.wrappedBuffer(it.byteStringPayload.toByteArray())
+    it.bufferPayload
 }, {
     val length = it.readVarInt()
     it.readBytes(length)
