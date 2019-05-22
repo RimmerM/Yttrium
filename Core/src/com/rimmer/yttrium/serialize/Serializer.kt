@@ -249,7 +249,6 @@ fun <V> mapReader(element: Reader) = Reader(Map::class.java, {
         }
     }
 
-    it.expect(JsonToken.Type.EndObject)
     it.useByteString = bytes
     map
 }, {
