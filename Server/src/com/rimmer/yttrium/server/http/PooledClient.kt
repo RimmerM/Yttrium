@@ -110,19 +110,21 @@ class HttpPooledClient(
                     var hasResult = false
                     var retries = 0
 
-                    override fun onResult(result: HttpResult) {
+                    override fun onResult(result: HttpResult): Boolean {
                         hasResult = true
-                        listener?.onResult(result)
+                        return listener?.onResult(result) ?: true
                     }
 
-                    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {
+                    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
                         hasResult = true
-                        listener?.onContent(result, content, finished)
-                        if(finished) {
+                        val ret = listener?.onContent(result, content, finished) ?: true
+                        if(finished || !ret) {
                             if(body is ByteBuf) body.release()
                             connection.close()
                             task.finish(result)
                         }
+
+                        return ret
                     }
 
                     override fun onError(error: Throwable) {

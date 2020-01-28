@@ -31,16 +31,22 @@ interface HttpListener {
     /**
      * Receives the initial response headers.
      * This is called once, before onContent.
+     * @return True if the client should receive the response body. False if the download should be stopped.
      */
-    fun onResult(result: HttpResult) {}
+    fun onResult(result: HttpResult): Boolean {
+        return true
+    }
 
     /**
      * Receives response data. This is called at least once.
      * This can be called multiple times with chunks of the response.
      * The content buffer is released after this.
      * @param finished If set, this is the last chunk and request has finished.
+     * @return True if the client should keep receiving content. False if the download should be stopped.
      */
-    fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {}
+    fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
+        return true
+    }
 
     /**
      * Called when an error occurs.
@@ -52,15 +58,17 @@ interface HttpListener {
 
 /** Http listener that appends to a buffer. */
 open class BufferListener(val buffer: ByteBuf): HttpListener {
-    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {
+    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
         buffer.writeBytes(content)
+        return true
     }
 }
 
 /** Http listener that appends to a string. */
 open class StringListener(val string: StringBuilder): HttpListener {
-    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {
+    override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
         string.append(content.string)
+        return true
     }
 }
 
@@ -160,23 +168,25 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
         if(message is HttpResponse) {
             val result = HttpResult(message.status(), message.status().code(), message.headers())
             this.result = result
-            listener?.onResult(result)
 
-            if(result.headers.get(HttpHeaderNames.CONNECTION)?.toLowerCase() == "close") {
+            if(listener?.onResult(result) == false) {
+                onFinish()
+                doClose()
+            } else if(result.headers.get(HttpHeaderNames.CONNECTION)?.toLowerCase() == "close") {
                 queueClose = true
             }
         } else if(message is HttpContent) {
-            val result = result!!
+            val result = this.result
             val finished = if(message is LastHttpContent) {
-                requestStart = 0
-                requestEnd = System.nanoTime()
-
-                this.listener = null
-                this.result = null
+                onFinish()
                 true
             } else false
 
-            listener?.onContent(result, message.content(), finished)
+            if(listener?.onContent(result!!, message.content(), finished) == false) {
+                onFinish()
+                doClose()
+            }
+
             message.content().release()
 
             if(finished && queueClose) doClose()
@@ -333,7 +343,8 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
         if(ssl == null) {
             context?.close()
         } else {
-            ssl.close().addListener {context?.close()}
+            ssl.closeOutbound()
+            context?.close()
         }
         this.context = null
     }
@@ -341,5 +352,13 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
     private fun onRequest(listener: HttpListener) {
         this.listener = listener
         requestStart = System.nanoTime()
+    }
+
+    private fun onFinish() {
+        requestStart = 0
+        requestEnd = System.nanoTime()
+
+        this.listener = null
+        this.result = null
     }
 }

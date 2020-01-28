@@ -232,26 +232,30 @@ fun HttpPool.request(context: Context, method: HttpMethod, path: String, body: A
 internal fun wrappedListener(task: Task<HttpResult>, listener: HttpListener?, connection: HttpClient): HttpListener {
     return if(listener === null) {
         object : HttpListener {
-            override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {
+            override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
                 if(finished) {
                     connection.close()
                     task.finish(result)
                 }
+
+                return true
             }
             override fun onError(error: Throwable) { task.fail(error) }
         }
     } else {
         object : HttpListener {
-            override fun onResult(result: HttpResult) {
-                listener.onResult(result)
+            override fun onResult(result: HttpResult): Boolean {
+                return listener.onResult(result)
             }
 
-            override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean) {
-                listener.onContent(result, content, finished)
-                if(finished) {
+            override fun onContent(result: HttpResult, content: ByteBuf, finished: Boolean): Boolean {
+                val ret = listener.onContent(result, content, finished)
+                if(finished || !ret) {
                     connection.close()
                     task.finish(result)
                 }
+
+                return ret
             }
 
             override fun onError(error: Throwable) {
