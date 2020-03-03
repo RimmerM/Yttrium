@@ -17,12 +17,16 @@ import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.multipart.DiskAttribute
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder
 import io.netty.handler.codec.http.multipart.MemoryAttribute
+import io.netty.handler.ssl.SslContext
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.security.KeyStore
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
 
 class HttpResult(val status: HttpResponseStatus, val statusCode: Int, val headers: HttpHeaders)
 
@@ -104,8 +108,7 @@ fun connectHttp(
 ) {
     connect(loop, host, port, timeout, useNative, {
         val sslContext = if(ssl) {
-            val sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
-            val handler = SslHandler(sslContext.newEngine(ByteBufAllocator.DEFAULT, host, port))
+            val handler = HttpClientHandler.sslContext.newHandler(channel().alloc(), host, port)
             addLast(handler)
             handler
         } else null
@@ -122,6 +125,16 @@ fun connectHttp(
 }
 
 class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, private var ssl: SslHandler?): ChannelInboundHandlerAdapter(), HttpClient {
+    internal companion object {
+        val sslContext: SslContext
+
+        init {
+            val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            factory.init(null as KeyStore?)
+            sslContext = SslContextBuilder.forClient().trustManager(factory).build()
+        }
+    }
+
     private var context: ChannelHandlerContext? = null
     private var listener: HttpListener? = null
     private var result: HttpResult? = null
