@@ -121,7 +121,7 @@ fun connectHttp(
     })
 }
 
-class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val ssl: SslHandler?): ChannelInboundHandlerAdapter(), HttpClient {
+class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, private var ssl: SslHandler?): ChannelInboundHandlerAdapter(), HttpClient {
     private var context: ChannelHandlerContext? = null
     private var listener: HttpListener? = null
     private var result: HttpResult? = null
@@ -140,6 +140,8 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
 
     override fun channelActive(context: ChannelHandlerContext) {
         this.context = context
+
+        val ssl = this.ssl
         if(ssl == null) {
             onConnect?.invoke(this, null)
             onConnect = null
@@ -159,6 +161,11 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
         // Fail any pending request.
         val error = IOException("Connection was closed.")
         queueClose = true
+
+        this.context = null
+        ssl?.closeOutbound()
+        ssl = null
+
         listener?.onError(error)
         listener = null
     }
@@ -340,13 +347,18 @@ class HttpClientHandler(var onConnect: ((HttpClient?, Throwable?) -> Unit)?, val
     }
 
     private fun doClose() {
-        if(ssl == null) {
-            context?.close()
+        val ssl = this.ssl
+        if(ssl != null) {
+            ssl.closeOutbound().addListener {
+                context?.close()
+                context = null
+            }
+
+            this.ssl = null
         } else {
-            ssl.closeOutbound()
             context?.close()
+            context = null
         }
-        this.context = null
     }
 
     private fun onRequest(listener: HttpListener) {
