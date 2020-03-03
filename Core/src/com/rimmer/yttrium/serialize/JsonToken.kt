@@ -28,7 +28,7 @@ class JsonToken(val buffer: ByteBuf, var useByteString: Boolean = false) {
     var stringPayload = ""
     var byteStringPayload = emptyString
 
-    val bufferPayload: ByteBuf get() = Unpooled.wrappedBuffer(Base64.getDecoder().decode(stringPayload))
+    val bufferPayload: ByteArray get() = Base64.getDecoder().decode(stringPayload)
 
     fun expect(type: Type, allowNull: Boolean = false) {
         parse()

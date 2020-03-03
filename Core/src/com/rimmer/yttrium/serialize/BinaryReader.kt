@@ -35,9 +35,11 @@ fun ByteBuf.readByteString(): ByteString {
     return LocalByteString(bytes)
 }
 
-fun ByteBuf.readBinary(): ByteBuf {
+fun ByteBuf.readBinary(): ByteArray {
     val length = readVarInt()
-    return readBytes(length)
+    val array = ByteArray(length)
+    readBytes(array)
+    return array
 }
 
 fun ByteBuf.readVarInt(): Int {

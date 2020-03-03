@@ -23,6 +23,11 @@ fun ByteBuf.writeBinary(b: ByteBuf) {
     writeBytes(b)
 }
 
+fun ByteBuf.writeBinary(b: ByteArray) {
+    writeVarInt(b.size)
+    writeBytes(b)
+}
+
 fun ByteBuf.writeVarInt(value: Int) {
     var v = value
     do {

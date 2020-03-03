@@ -138,6 +138,14 @@ class JsonWriter(val buffer: ByteBuf) {
         return this
     }
 
+    fun value(i: ByteArray): JsonWriter {
+        buffer.writeByte('"'.toInt())
+        val base64 = Base64.getEncoder().encode(i)
+        buffer.writeBytes(base64)
+        buffer.writeByte('"'.toInt())
+        return this
+    }
+
     companion object {
         val trueBytes = "true".toByteArray()
         val falseBytes = "false".toByteArray()
