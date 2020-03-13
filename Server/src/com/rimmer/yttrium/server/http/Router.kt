@@ -288,36 +288,41 @@ fun parseBodyQuery(route: Route, request: FullHttpRequest, queries: Array<Any?>)
     var error: Throwable? = null
     if(request.content().readableBytes() > 0) {
         val bodyDecoder = HttpPostRequestDecoder(request)
-        while(try { bodyDecoder.hasNext() } catch(e: HttpPostRequestDecoder.EndOfDataDecoderException) { false }) {
-            val p = bodyDecoder.next() as? HttpData ?: continue
 
-            // Check if this parameter is recognized.
-            val name = p.name.hashCode()
-            route.args.forEachIndexed { i, query ->
-                if(argApplicable(name, query)) {
-                    val buffer = p.byteBuf
-                    val index = buffer.readerIndex()
+        try {
+            while(try { bodyDecoder.hasNext() } catch(e: HttpPostRequestDecoder.EndOfDataDecoderException) { false }) {
+                val p = bodyDecoder.next() as? HttpData ?: continue
 
-                    // This is a bit ugly - we don't really know if the provided data is json or raw,
-                    // so we just try parsing it in both ways.
-                    try {
-                        queries[i] = query.reader!!.fromJson(JsonToken(buffer))
+                // Check if this parameter is recognized.
+                val name = p.name.hashCode()
+                route.args.forEachIndexed { i, query ->
+                    if(argApplicable(name, query)) {
+                        val buffer = p.byteBuf
+                        val index = buffer.readerIndex()
 
-                        // If the parser didn't read the whole buffer, there was probably a conflict.
-                        if(buffer.readableBytes() > 0) throw Exception()
-                    } catch(e: Throwable) {
-                        buffer.readerIndex(index)
+                        // This is a bit ugly - we don't really know if the provided data is json or raw,
+                        // so we just try parsing it in both ways.
                         try {
-                            queries[i] = readPrimitive(buffer.string, query.type)
+                            queries[i] = query.reader!!.fromJson(JsonToken(buffer))
+
+                            // If the parser didn't read the whole buffer, there was probably a conflict.
+                            if(buffer.readableBytes() > 0) throw Exception()
                         } catch(e: Throwable) {
-                            // If both parsing tries failed, we set the exception to be propagated if needed.
-                            if(error == null) {
-                                error = e
+                            buffer.readerIndex(index)
+                            try {
+                                queries[i] = readPrimitive(buffer.string, query.type)
+                            } catch(e: Throwable) {
+                                // If both parsing tries failed, we set the exception to be propagated if needed.
+                                if(error == null) {
+                                    error = e
+                                }
                             }
                         }
                     }
                 }
             }
+        } finally {
+            bodyDecoder.destroy()
         }
     }
     return error
