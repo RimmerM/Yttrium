@@ -117,14 +117,14 @@ val longReader = Reader(Long::class.javaObjectType, {
 
 val shortReader = Reader(Short::class.javaObjectType, {
     it.expect(JsonToken.Type.NumberLit)
-    it.numberPayload.toShort()
+    it.numberPayload.toInt().toShort()
 }, {
     it.readVarInt().toShort()
 })
 
 val byteReader = Reader(Byte::class.javaObjectType, {
     it.expect(JsonToken.Type.NumberLit)
-    it.numberPayload.toByte()
+    it.numberPayload.toInt().toByte()
 }, {
     it.readVarInt().toByte()
 })

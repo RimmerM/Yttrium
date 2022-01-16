@@ -12,7 +12,7 @@ fun String.sliceHash(start: Int, end: Int): Int {
     var h = 0
     var i = start
     while(i < end) {
-        h = 31 * h + this[i].toInt()
+        h = 31 * h + this[i].code
         i++
     }
     return h

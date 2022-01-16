@@ -124,17 +124,17 @@ class ByteStringBuilder {
     fun append(b: Boolean): ByteStringBuilder {
         if(b) {
             ensureCapacity(count + 4)
-            value[count++] = 't'.toByte()
-            value[count++] = 'r'.toByte()
-            value[count++] = 'u'.toByte()
-            value[count++] = 'e'.toByte()
+            value[count++] = 't'.code.toByte()
+            value[count++] = 'r'.code.toByte()
+            value[count++] = 'u'.code.toByte()
+            value[count++] = 'e'.code.toByte()
         } else {
             ensureCapacity(count + 5)
-            value[count++] = 'f'.toByte()
-            value[count++] = 'a'.toByte()
-            value[count++] = 'l'.toByte()
-            value[count++] = 's'.toByte()
-            value[count++] = 'e'.toByte()
+            value[count++] = 'f'.code.toByte()
+            value[count++] = 'a'.code.toByte()
+            value[count++] = 'l'.code.toByte()
+            value[count++] = 's'.code.toByte()
+            value[count++] = 'e'.code.toByte()
         }
         return this
     }

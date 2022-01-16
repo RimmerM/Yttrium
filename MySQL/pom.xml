@@ -65,7 +65,7 @@
         <dependency>
             <groupId>com.github.RimmerM</groupId>
             <artifactId>MySQL-Async</artifactId>
-            <version>-SNAPSHOT</version>
+            <version>1703162d03faf47121cd896b546371b8f0c7956a</version>
         </dependency>
     </dependencies>
 </project>
