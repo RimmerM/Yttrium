@@ -58,6 +58,7 @@ class SingleThreadPool(
                 connectionCount++
                 creator {c, e ->
                     if(c == null) {
+                        connectionCount--
                         f(null, e)
                     } else {
                         val pooled = PooledClient(c, this)
