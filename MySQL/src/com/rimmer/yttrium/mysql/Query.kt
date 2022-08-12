@@ -17,14 +17,14 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 
 /** Makes sure that the query contains at least one result and returns it. */
-inline fun <T> Query.value(pool: SQLPool, context: Context, crossinline format: (Row) -> T) = map(pool, context) {
+fun <T> Query.value(pool: SQLPool, context: Context, format: (Row) -> T) = map(pool, context) {
     val r = it.result
     if(r == null || r.data.isEmpty()) throw NotFoundException()
     format(r.data[0])
 }
 
 /** Fetches one result if possible, and returns it. */
-inline fun <T> Query.maybeValue(pool: SQLPool, context: Context, crossinline format: (Row) -> T): Task<T?> {
+fun <T> Query.maybeValue(pool: SQLPool, context: Context, format: (Row) -> T): Task<T?> {
     val future = Task<T?>()
     run(pool[context], context.listenerData) { r, e ->
         if(e == null) {
@@ -42,7 +42,7 @@ inline fun <T> Query.maybeValue(pool: SQLPool, context: Context, crossinline for
 }
 
 /** Fetches one result if possible, and runs the provided task otherwise. */
-inline fun <T> Query.valueOrElse(pool: SQLPool, context: Context, crossinline format: (Row) -> T, crossinline otherwise: () -> Task<T>): Task<T> {
+fun <T> Query.valueOrElse(pool: SQLPool, context: Context, format: (Row) -> T, otherwise: () -> Task<T>): Task<T> {
     val future = Task<T>()
     run(pool[context], context.listenerData) { r, e ->
         if(e == null) {
@@ -78,11 +78,11 @@ fun <T> Query.value(pool: SQLPool, context: Context) = value(pool, context) { it
 fun <T> Query.maybeValue(pool: SQLPool, context: Context) = maybeValue(pool, context) { it[0] as T }
 
 /** Fetches one result if possible and returns the single column. Otherwise, the provided task is run. */
-inline fun <reified T> Query.valueOrElse(pool: SQLPool, context: Context, crossinline otherwise: () -> Task<T>) =
-        valueOrElse(pool, context, { it[0] as T }, otherwise)
+fun <T> Query.valueOrElse(pool: SQLPool, context: Context, otherwise: () -> Task<T>) =
+    valueOrElse(pool, context, { it[0] as T }, otherwise)
 
 /** Fetches a list of results and formats each entry. */
-inline fun <T> Query.values(pool: SQLPool, context: Context, crossinline format: (Row) -> T) = map(pool, context) {
+fun <T> Query.values(pool: SQLPool, context: Context, format: (Row) -> T) = map(pool, context) {
     val list = ArrayList<T>()
     it.result?.data?.forEach { list.add(format(it)) }
     list
@@ -92,7 +92,7 @@ inline fun <T> Query.values(pool: SQLPool, context: Context, crossinline format:
 fun <T> Query.values(pool: SQLPool, context: Context) = values(pool, context) {it[0] as T}
 
 /** Creates an associative map from a result query. */
-inline fun <K, V> Query.asMap(pool: SQLPool, context: Context, crossinline key: (Row) -> K, crossinline value: (Row) -> V) = map(pool, context) {
+fun <K, V> Query.asMap(pool: SQLPool, context: Context, key: (Row) -> K, value: (Row) -> V) = map(pool, context) {
     val map = HashMap<K, V>()
     it.result?.data?.forEach {
         map[key(it)] = value(it)
@@ -101,7 +101,7 @@ inline fun <K, V> Query.asMap(pool: SQLPool, context: Context, crossinline key: 
 }
 
 /** Performs an action if the query succeeded. */
-inline fun <T> Query.map(pool: SQLPool, context: Context, crossinline f: (QueryResult) -> T): Task<T> {
+fun <T> Query.map(pool: SQLPool, context: Context, f: (QueryResult) -> T): Task<T> {
     val task = Task<T>()
     run(pool[context], context.listenerData) {r, e ->
         if(e == null) {
@@ -118,7 +118,7 @@ inline fun <T> Query.map(pool: SQLPool, context: Context, crossinline f: (QueryR
 }
 
 /** Performs a task if the query succeeded. */
-inline fun <T> Query.then(pool: SQLPool, context: Context, crossinline f: (QueryResult) -> Task<T>): Task<T> {
+fun <T> Query.then(pool: SQLPool, context: Context, f: (QueryResult) -> Task<T>): Task<T> {
     val task = Task<T>()
     run(pool[context], context.listenerData) {r, e ->
         if(e == null) {

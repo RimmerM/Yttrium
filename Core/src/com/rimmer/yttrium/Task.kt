@@ -53,7 +53,7 @@ class Task<T> {
     }
 
     /** Call the provided handler when finished. */
-    inline fun onFinish(crossinline f: (T) -> Unit) {
+    fun onFinish(f: (T) -> Unit) {
         handler = {r, _ ->
             try {
                 r?.let(f)
@@ -64,7 +64,7 @@ class Task<T> {
     }
 
     /** Call the provided handler when failed. */
-    inline fun onFail(crossinline f: (Throwable) -> Unit) {
+    fun onFail(f: (Throwable) -> Unit) {
         handler = {_, e ->
             try {
                 e?.let(f)
@@ -75,7 +75,7 @@ class Task<T> {
     }
 
     /** Maps the task through the provided function, returning a new task. */
-    inline fun <U> map(crossinline f: (T) -> U): Task<U> {
+    fun <U> map(f: (T) -> U): Task<U> {
         val task = Task<U>()
         handler = {r, e ->
             if(e == null) {
@@ -99,7 +99,7 @@ class Task<T> {
     }
 
     /** Maps the task through the provided functions, returning a new task. */
-    inline fun <U> map(crossinline succeed: (T) -> U, crossinline fail: (Throwable) -> U): Task<U> {
+    fun <U> map(succeed: (T) -> U, fail: (Throwable) -> U): Task<U> {
         val task = Task<U>()
         handler = {r, e ->
             if(e == null) {
@@ -121,10 +121,10 @@ class Task<T> {
     }
 
     /** Maps the task failure through the provided function, returning a new task. */
-    inline fun catch(crossinline f: (Throwable) -> T) = map({it}, {f(it)})
+    fun catch(f: (Throwable) -> T) = map({it}, {f(it)})
 
     /** Runs the provided task generator on finish, returning the new task. */
-    inline fun <U> then(crossinline f: (T) -> Task<U>): Task<U> {
+    fun <U> then(f: (T) -> Task<U>): Task<U> {
         val task = Task<U>()
         handler = {r, e ->
             if(e == null) {
@@ -149,7 +149,7 @@ class Task<T> {
     }
 
     /** Runs the provided task generator on finish or failure, returning the new task. */
-    inline fun <U> then(crossinline succeed: (T) -> Task<U>, crossinline fail: (Throwable) -> Task<U>): Task<U> {
+    fun <U> then(succeed: (T) -> Task<U>, fail: (Throwable) -> Task<U>): Task<U> {
         val task = Task<U>()
         handler = {r, e ->
             if(e == null) {
@@ -185,7 +185,7 @@ class Task<T> {
     }
 
     /** Runs the provided function whether the task succeeds or not. */
-    inline fun always(crossinline f: (T?, Throwable?) -> Unit): Task<T> {
+    fun always(f: (T?, Throwable?) -> Unit): Task<T> {
         val task = Task<T>()
         handler = {r, e ->
             try {
