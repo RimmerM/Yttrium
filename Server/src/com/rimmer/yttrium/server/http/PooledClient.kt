@@ -18,7 +18,8 @@ class HttpPooledClient(
     val maxBusy: Long = 60L * 1000L * 1000000L,
     val maxRetries: Int = 1,
     val debug: Boolean = false,
-    val useNative: Boolean = false
+    val useNative: Boolean = false,
+    val maxItems: Int = 4
 ) {
     private val pools: Map<EventLoop, HashMap<String, SingleThreadPool>>
 
@@ -98,7 +99,7 @@ class HttpPooledClient(
         val selector = "$domain $isSsl"
 
         val request = genRequest(path, host, method, headers, body, contentType)
-        val client = pool.getOrAdd(selector) { SingleThreadPool(PoolConfiguration(4, maxIdle, maxBusy, debug = debug)) {
+        val client = pool.getOrAdd(selector) { SingleThreadPool(PoolConfiguration(maxItems, maxIdle, maxBusy, debug = debug)) {
             connectHttp(loop, host, port, isSsl, 30000, useNative, it)
         } }
 
