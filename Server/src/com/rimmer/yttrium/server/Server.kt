@@ -3,6 +3,7 @@ package com.rimmer.yttrium.server
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.*
 import io.netty.channel.epoll.Epoll
+import io.netty.channel.epoll.EpollChannelOption
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.epoll.EpollServerSocketChannel
 import io.netty.channel.nio.NioEventLoopGroup
@@ -52,6 +53,7 @@ inline fun listen(
     context: ServerContext,
     port: Int,
     useNative: Boolean = false,
+    allowReuse: Boolean = false,
     crossinline pipeline: ChannelPipeline.() -> Unit
 ): ChannelFuture {
     val channelType = if(useNative && Epoll.isAvailable()) {
@@ -64,9 +66,17 @@ inline fun listen(
         override fun initChannel(channel: SocketChannel) { pipeline(channel.pipeline()) }
     }
 
-    return ServerBootstrap()
+    val bootstrap = ServerBootstrap()
         .group(context.acceptorGroup, context.handlerGroup)
         .channel(channelType)
         .childHandler(child)
-        .bind(port).sync().channel().closeFuture()
+
+    if(useNative) {
+        bootstrap.option(EpollChannelOption.SO_REUSEADDR, true)
+        if(allowReuse) bootstrap.option(EpollChannelOption.SO_REUSEPORT, true)
+    } else {
+        bootstrap.option(ChannelOption.SO_REUSEADDR, true)
+    }
+
+    return bootstrap.bind(port).sync().channel().closeFuture()
 }
