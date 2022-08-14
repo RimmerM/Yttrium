@@ -212,7 +212,7 @@ class JsonToken(val buffer: ByteBuf, var useByteString: Boolean = false) {
             val n = Character.digit(ch, 10)
             out *= 10.0
             out += n
-            ch = buffer.readByte().toChar()
+            ch = if(buffer.isReadable) buffer.readByte().toChar() else 0.toChar()
         }
 
         // Check if there is a fractional part.
@@ -227,7 +227,7 @@ class JsonToken(val buffer: ByteBuf, var useByteString: Boolean = false) {
                 dec += n
 
                 dpl++
-                ch = buffer.readByte().toChar()
+                ch = if(buffer.isReadable) buffer.readByte().toChar() else 0.toChar()
             }
 
             // We need to use a floating point power here in order to support more than 9 decimals.
@@ -256,7 +256,7 @@ class JsonToken(val buffer: ByteBuf, var useByteString: Boolean = false) {
                 val n = Character.digit(ch, 10)
                 exp *= 10.0
                 exp += n
-                ch = buffer.readByte().toChar()
+                ch = if(buffer.isReadable) buffer.readByte().toChar() else 0.toChar()
             }
 
             if(signNegative) exp = -exp
@@ -268,7 +268,7 @@ class JsonToken(val buffer: ByteBuf, var useByteString: Boolean = false) {
         if(neg) out = -out
 
         // We read one character ahead, so restore it.
-        buffer.readerIndex(buffer.readerIndex() - 1)
+        if(ch != 0.toChar()) buffer.readerIndex(buffer.readerIndex() - 1)
         return out
     }
 
