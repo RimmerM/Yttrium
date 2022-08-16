@@ -10,9 +10,10 @@ fun listenBinary(
     context: ServerContext,
     port: Int,
     useNative: Boolean = false,
+    allowReuse: Boolean = false,
     pipeline: (ChannelPipeline.() -> Unit)? = null,
     handler: (ChannelHandlerContext, source: ByteBuf, target: ByteBuf, push: () -> Unit) -> Unit
-) = listen(context, port, useNative) {
+) = listen(context, port, useNative, allowReuse) {
     addLast(BinaryHandler(handler))
     pipeline?.invoke(this)
 }

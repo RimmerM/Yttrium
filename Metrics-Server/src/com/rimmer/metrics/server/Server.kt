@@ -21,7 +21,7 @@ import com.rimmer.yttrium.server.http.HttpRouter
 import com.rimmer.yttrium.server.http.listenHttp
 
 /** Runs a server that receives metrics and stores them in-memory. */
-fun storeServer(context: ServerContext, store: MetricStore, port: Int, useNative: Boolean = false) {
+fun storeServer(context: ServerContext, store: MetricStore, port: Int, useNative: Boolean = false, allowReuse: Boolean = false) {
     val router = Router(listOf(AddressPlugin()) as List<Plugin<in Any>>)
     router.serverApi(
         metric = { it, name, ip ->
@@ -36,11 +36,11 @@ fun storeServer(context: ServerContext, store: MetricStore, port: Int, useNative
         }
     )
 
-    listenBinary(context, port, useNative, null, BinaryRouter(router, ErrorListener()))
+    listenBinary(context, port, useNative, allowReuse, null, BinaryRouter(router, ErrorListener()))
 }
 
 /** Runs a server that listens for client requests and sends metrics data. */
-fun clientServer(context: ServerContext, store: MetricStore, port: Int, httpPort: Int, password: String, useNative: Boolean = false) {
+fun clientServer(context: ServerContext, store: MetricStore, port: Int, httpPort: Int, password: String, useNative: Boolean = false, allowReuse: Boolean = false) {
     val router = Router(listOf(PasswordPlugin(password), AddressPlugin()) as List<Plugin<in Any>>)
 
     router.clientApi(
@@ -56,7 +56,7 @@ fun clientServer(context: ServerContext, store: MetricStore, port: Int, httpPort
     )
 
     val errorListener = ErrorListener()
-    listenBinary(context, port, useNative, null, BinaryRouter(router, errorListener))
+    listenBinary(context, port, useNative, allowReuse, null, BinaryRouter(router, errorListener))
     listenHttp(context, httpPort, true, useNative, handler = HttpRouter(router, errorListener))
 }
 
