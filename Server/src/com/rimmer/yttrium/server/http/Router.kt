@@ -298,24 +298,13 @@ fun parseBodyQuery(route: Route, request: FullHttpRequest, queries: Array<Any?>)
                 route.args.forEachIndexed { i, query ->
                     if(argApplicable(name, query)) {
                         val buffer = p.byteBuf
-                        val index = buffer.readerIndex()
 
-                        // This is a bit ugly - we don't really know if the provided data is json or raw,
-                        // so we just try parsing it in both ways.
                         try {
-                            queries[i] = query.reader!!.fromJson(JsonToken(buffer))
-
-                            // If the parser didn't read the whole buffer, there was probably a conflict.
-                            if(buffer.readableBytes() > 0) throw Exception()
+                            queries[i] = readPrimitive(buffer.string, query.type)
                         } catch(e: Throwable) {
-                            buffer.readerIndex(index)
-                            try {
-                                queries[i] = readPrimitive(buffer.string, query.type)
-                            } catch(e: Throwable) {
-                                // If both parsing tries failed, we set the exception to be propagated if needed.
-                                if(error == null) {
-                                    error = e
-                                }
+                            // If both parsing tries failed, we set the exception to be propagated if needed.
+                            if(error == null) {
+                                error = e
                             }
                         }
                     }
